@@ -26,7 +26,7 @@ CREATE TYPE recurrence_type AS ENUM (
     'Saturday'
 );
 
-COMMENT ON TYPE recurrence_type IS 'Types of recurrences supported in the application.';
+COMMENT ON TYPE recurrence_type IS 'Types of workout recurrences supported in the application.';
 
 --
 -- Template Tables
@@ -41,7 +41,7 @@ CREATE TABLE exercises (
     default_sets INTEGER DEFAULT 1,
     rest_timer INTEGER,
     is_locked BOOLEAN DEFAULT FALSE
-)
+);
 
 COMMENT ON TABLE exercises IS 'Stores exercise templates for each user.';
 COMMENT ON COLUMN exercises.id IS 'Primary key for the exercise.';
@@ -61,7 +61,7 @@ CREATE TABLE workouts (
     name TEXT NOT NULL,
     description TEXT,
     is_locked BOOLEAN DEFAULT FALSE
-)
+);
 
 COMMENT ON TABLE workouts IS 'Stores workout templates for each user.';
 COMMENT ON COLUMN workouts.id IS 'Primary key for the workout.';
@@ -78,7 +78,7 @@ CREATE TABLE exercise_results (
     note TEXT,
     data JSONB, -- For all potential exercise data
     is_locked BOOLEAN DEFAULT FALSE
-)
+);
 
 COMMENT ON TABLE exercise_results IS 'Stores results for individual exercises performed by users.';
 COMMENT ON COLUMN exercise_results.id IS 'Primary key for the exercise result.';
@@ -95,7 +95,7 @@ CREATE TABLE workout_results (
     finished_at TIMESTAMPTZ,
     note TEXT,
     is_locked BOOLEAN DEFAULT FALSE
-)
+);
 
 COMMENT ON TABLE workout_results IS 'Stores results for completed workouts by users.';
 COMMENT ON COLUMN workout_results.id IS 'Primary key for the workout result.';
@@ -113,7 +113,7 @@ CREATE TABLE workout_exercises (
     exercise_id UUID NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
     position INTEGER NOT NULL,
     PRIMARY KEY (workout_id, exercise_id)
-)
+);
 
 COMMENT ON TABLE workout_exercises IS 'Join table linking exercises to workouts, with position.';
 COMMENT ON COLUMN workout_exercises.workout_id IS 'The workout this exercise belongs to.';
@@ -125,7 +125,7 @@ CREATE TABLE workout_result_exercise_results (
     exercise_result_id UUID NOT NULL REFERENCES exercise_results(id) ON DELETE CASCADE,
     position INTEGER NOT NULL,
     PRIMARY KEY (workout_result_id, exercise_result_id)
-)
+);
 
 COMMENT ON TABLE workout_result_exercise_results IS 'Join table linking exercise results to workout results, with position.';
 COMMENT ON COLUMN workout_result_exercise_results.workout_result_id IS 'The workout result this exercise result belongs to.';
@@ -143,70 +143,6 @@ COMMENT ON TABLE user_workout_recurrence IS 'Tracks which workouts recur for a u
 COMMENT ON COLUMN user_workout_recurrence.user_id IS 'The user who owns the recurrence.';
 COMMENT ON COLUMN user_workout_recurrence.workout_id IS 'The workout that recurs.';
 COMMENT ON COLUMN user_workout_recurrence.recurrence IS 'The recurrence pattern (e.g., Daily, Weekly, etc.).';
-
---
--- Functions
---
-CREATE FUNCTION rebalance_workout_exercise_positions()
-RETURNS TRIGGER AS $$
-BEGIN
-    WITH ordered AS (
-        SELECT
-            workout_id,
-            exercise_id,
-            ROW_NUMBER() OVER (
-                PARTITION BY workout_id
-                ORDER BY position
-            ) AS new_position
-        FROM workout_exercises
-    )
-    UPDATE workout_exercises we
-    SET position = ordered.new_position
-    FROM ordered
-    WHERE we.workout_id = ordered.workout_id
-      AND we.exercise_id = ordered.exercise_id;
-    RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
-
-COMMENT ON FUNCTION rebalance_workout_exercise_positions IS 'Rebalances the positions of exercises in a workout after any insert, update, or delete operation.';
-
-CREATE FUNCTION rebalance_workout_result_exercise_positions()
-RETURNS TRIGGER AS $$
-BEGIN
-    WITH ordered AS (
-        SELECT
-            workout_result_id,
-            exercise_result_id,
-            ROW_NUMBER() OVER (
-                PARTITION BY workout_result_id
-                ORDER BY position
-            ) AS new_position
-        FROM workout_result_exercise_results
-    )
-    UPDATE workout_result_exercise_results wre
-    SET position = ordered.new_position
-    FROM ordered
-    WHERE wre.workout_result_id = ordered.workout_result_id
-      AND wre.exercise_result_id = ordered.exercise_result_id;
-    RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
-
-COMMENT ON FUNCTION rebalance_workout_result_exercise_positions IS 'Rebalances the positions of exercise results in a workout result after any insert, update, or delete operation.';
-
---
--- Triggers
---
-CREATE TRIGGER workout_exercises_rebalance_positions
-AFTER INSERT OR UPDATE OR DELETE ON workout_exercises
-FOR EACH STATEMENT
-EXECUTE FUNCTION rebalance_workout_exercise_positions();
-
-CREATE TRIGGER workout_result_exercise_results_rebalance_positions
-AFTER INSERT OR UPDATE OR DELETE ON workout_result_exercise_results
-FOR EACH STATEMENT
-EXECUTE FUNCTION rebalance_workout_result_exercise_positions();
 
 --
 -- RLS Policies

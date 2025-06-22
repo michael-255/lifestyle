@@ -6,12 +6,18 @@ This app can also be used as a reference for building a Vue 3 application with Q
 
 ## TODO
 
+- Port over basic project setup from `web-app-template-v1`
+  - Schemas, icons, etc.
+  - Basic UI layout
+    - App.vue
+    - Views
+    - Components
+    - base.css
+  - Break views into directories for each app
 - Create a new Supabase project and enter the following into GitHub secrets:
   - `SUPABASE_ACCESS_TOKEN`
   - `SUPABASE_DB_PASSWORD`
   - `SUPABASE_PROJECT_ID`
-- Test migration file parts in Supabase SQL editor
-  - See if the various queries you plan to do will work on those tables
 
 ## Project Setup
 
