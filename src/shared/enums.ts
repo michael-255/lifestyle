@@ -26,9 +26,25 @@ export enum RouteNameEnum {
   FITNESS_MANAGEMENT = 'FitnessManagement',
 }
 
+/**
+ * Local database tables stored in the browser's local storage.
+ */
+export enum LocalTableEnum {
+  SETTINGS = 'settings',
+  LOGS = 'logs',
+  NOTIFICATIONS = 'notifications',
+}
+
+/**
+ * Supabase tables used in the application.
+ */
+export enum TableEnum {
+  // TODO
+}
+
 export enum LimitEnum {
   MAX_TEXT_AREA = 300,
-  MAX_TEXT_LINE = 50,
+  MAX_TEXT_LABEL = 50,
 }
 
 export enum DurationEnum {

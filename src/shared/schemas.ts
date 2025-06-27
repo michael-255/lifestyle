@@ -1,4 +1,5 @@
 import {
+  LimitEnum,
   LocalTableEnum,
   LogLevelEnum,
   RouteNameEnum,
@@ -15,6 +16,8 @@ import { z } from 'zod'
 // Shared
 //
 
+export const textLabelSchema = z.string().min(1).max(LimitEnum.MAX_TEXT_LABEL).trim()
+export const textAreaSchema = z.string().max(LimitEnum.MAX_TEXT_AREA).trim() // desc, notes, etc.
 export const urlSchema = z.string().url()
 export const emailSchema = z.string().email()
 export const localTableSchema = z.nativeEnum(LocalTableEnum)
@@ -65,4 +68,18 @@ export const logSchema = z.object({
   log_level: logLevelSchema,
   label: logLabelSchema,
   details: logDetailsSchema,
+})
+
+//
+// Notifications
+//
+
+export const notificationSchema = z.object({
+  id: idSchema,
+  created_at: timestampzSchema,
+  app_title: textLabelSchema,
+  heading: textLabelSchema,
+  message: textAreaSchema,
+  icon: z.string(),
+  color: z.string(),
 })

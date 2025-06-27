@@ -6,11 +6,14 @@ import type {
   logLabelSchema,
   logLevelSchema,
   logSchema,
+  notificationSchema,
   routeNameSchema,
   settingIdSchema,
   settingSchema,
   settingValueSchema,
   tableSchema,
+  textAreaSchema,
+  textLabelSchema,
   timestampzSchema,
 } from './schemas'
 
@@ -29,6 +32,8 @@ export type BackupType = {
 // Shared
 //
 
+export type TextLabelType = z.infer<typeof textLabelSchema>
+export type TextAreaType = z.infer<typeof textAreaSchema>
 export type LocalTableType = z.infer<typeof localTableSchema>
 export type TableType = z.infer<typeof tableSchema>
 export type RouteNameType = z.infer<typeof routeNameSchema>
@@ -51,3 +56,9 @@ export type LogLevelType = z.infer<typeof logLevelSchema>
 export type LogLabelType = z.infer<typeof logLabelSchema>
 export type LogDetailsType = z.infer<typeof logDetailsSchema>
 export type LogType = z.infer<typeof logSchema>
+
+//
+// Notifications
+//
+
+export type NotificationType = z.infer<typeof notificationSchema>

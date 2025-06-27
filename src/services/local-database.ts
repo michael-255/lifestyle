@@ -1,7 +1,7 @@
 import { Log } from '@/models/Log'
 import { Setting } from '@/models/Setting'
 import { appTitle } from '@/shared/constants'
-import { DurationEnum, DurationMSEnum, SettingIdEnum } from '@/shared/enums'
+import { DurationEnum, DurationMSEnum, LocalTableEnum, SettingIdEnum } from '@/shared/enums'
 import { timestampzSchema } from '@/shared/schemas'
 import type { LogType, SettingType, SettingValueType } from '@/shared/types'
 import Dexie, { liveQuery, type Observable, type Table } from 'dexie'
@@ -12,19 +12,22 @@ import Dexie, { liveQuery, type Observable, type Table } from 'dexie'
  */
 export class LocalDatabase extends Dexie {
   // Required for easier TypeScript usage
-  settings!: Table<Setting>;
-  logs!: Table<Log>
+  [LocalTableEnum.SETTINGS]!: Table<Setting>;
+  [LocalTableEnum.LOGS]!: Table<Log>
+  [LocalTableEnum.NOTIFICATIONS]!: Table<Notification>
 
   constructor(name: string) {
     super(name)
 
     this.version(1).stores({
-      settings: '&id',
-      logs: '&id, created_at',
+      [LocalTableEnum.SETTINGS]: '&id',
+      [LocalTableEnum.LOGS]: '&id, created_at',
+      [LocalTableEnum.NOTIFICATIONS]: '&id, created_at',
     })
 
-    this.settings.mapToClass(Setting)
-    this.logs.mapToClass(Log)
+    this[LocalTableEnum.SETTINGS].mapToClass(Setting)
+    this[LocalTableEnum.LOGS].mapToClass(Log)
+    this[LocalTableEnum.NOTIFICATIONS].mapToClass(Notification)
   }
 
   /**
@@ -51,7 +54,7 @@ export class LocalDatabase extends Dexie {
     // Get all settings or create them with default values
     const settings = await Promise.all(
       settingids.map(async (id) => {
-        const setting = await this.table('settings').get(id)
+        const setting = await this.table(LocalTableEnum.SETTINGS).get(id)
         if (setting) {
           return setting
         } else {
@@ -63,7 +66,7 @@ export class LocalDatabase extends Dexie {
       }),
     )
 
-    await Promise.all(settings.map((setting) => this.table('settings').put(setting)))
+    await Promise.all(settings.map((setting) => this.table(LocalTableEnum.SETTINGS).put(setting)))
   }
 
   /**
@@ -72,7 +75,7 @@ export class LocalDatabase extends Dexie {
    * @returns The number of logs deleted
    */
   async deleteExpiredLogs() {
-    const setting = await this.table('settings').get(
+    const setting = await this.table(LocalTableEnum.SETTINGS).get(
       SettingIdEnum.LOG_RETENTION_DURATION,
     )
     const logRetentionDuration = setting?.value as DurationEnum
@@ -81,7 +84,7 @@ export class LocalDatabase extends Dexie {
       return 0 // No logs purged
     }
 
-    const allLogs = await this.table('logs').toArray()
+    const allLogs = await this.table(LocalTableEnum.LOGS).toArray()
     const maxLogAgeMs = DurationMSEnum[logRetentionDuration]
     const now = Date.now()
 
@@ -98,7 +101,7 @@ export class LocalDatabase extends Dexie {
       })
       .map((log: LogType) => log.id) // Map remaining Log ids for removal
 
-    await this.table('logs').bulkDelete(removableLogs)
+    await this.table(LocalTableEnum.LOGS).bulkDelete(removableLogs)
     return removableLogs.length // Number of logs deleted
   }
 
@@ -109,7 +112,7 @@ export class LocalDatabase extends Dexie {
    */
   liveLogs(): Observable<LogType[]> {
     return liveQuery(() =>
-      this.table('logs').orderBy('created_at').reverse().toArray(),
+      this.table(LocalTableEnum.LOGS).orderBy('created_at').reverse().toArray(),
     )
   }
 
@@ -119,7 +122,7 @@ export class LocalDatabase extends Dexie {
    * changes.
    */
   liveSettings(): Observable<SettingType[]> {
-    return liveQuery(() => this.table('settings').toArray())
+    return liveQuery(() => this.table(LocalTableEnum.SETTINGS).toArray())
   }
 }
 
